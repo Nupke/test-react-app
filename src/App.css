@@ -1,25 +1,134 @@
 .app {
   text-align: center;
-  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
 }
 
-.card {
-  padding: 2rem;
+/* Hero */
+.hero {
+  padding: 3rem 0 4rem;
 }
 
-button {
+.hero-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.hero-title {
+  font-size: 2.75rem;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  color: #0f172a;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  max-width: 520px;
+  margin: 0 auto 2rem;
+}
+
+/* Signup form */
+.signup-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.signup-form input {
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  color: #ffffff;
-  cursor: pointer;
-  transition: border-color 0.25s;
+  width: 260px;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-button:hover {
-  border-color: #646cff;
+.signup-form input:focus {
+  border-color: #0ea5e9;
+}
+
+.signup-form button {
+  padding: 0.65rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: #0ea5e9;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.signup-form button:hover {
+  background: #0284c7;
+}
+
+.success-message {
+  color: #16a34a;
+  font-size: 1rem;
+}
+
+/* Features */
+.features {
+  padding: 2rem 0 3rem;
+}
+
+.features-heading {
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+  color: #0f172a;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.feature-icon {
+  font-size: 2rem;
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  margin: 0.75rem 0 0.5rem;
+  color: #0f172a;
+}
+
+.feature-card p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Footer */
+.footer {
+  padding: 2rem 0;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 2rem;
+}
+
+.footer p {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin: 0;
 }
