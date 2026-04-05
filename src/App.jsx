@@ -9,9 +9,7 @@ function App() {
       <h1>Test React App</h1>
       <p>SDLC Pipeline Validation Project</p>
       <div className="card">
-        <button onClick={() => setCount((c) => c + 1)}>
-          Count: {count}
-        </button>
+        <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>
       </div>
     </div>
   );
