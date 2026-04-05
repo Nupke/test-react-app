@@ -1,105 +1,93 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import './App.css';
 
-const MOVIES = [
-  { title: 'The Shawshank Redemption', year: 1994, genre: 'Drama', rating: '9.3' },
-  { title: 'Inception', year: 2010, genre: 'Sci-Fi', rating: '8.8' },
-  { title: 'The Dark Knight', year: 2008, genre: 'Action', rating: '9.0' },
-  { title: 'Pulp Fiction', year: 1994, genre: 'Crime', rating: '8.9' },
-  { title: 'Forrest Gump', year: 1994, genre: 'Drama', rating: '8.8' },
-  { title: 'The Matrix', year: 1999, genre: 'Sci-Fi', rating: '8.7' },
-  { title: 'Interstellar', year: 2014, genre: 'Sci-Fi', rating: '8.7' },
-  { title: 'The Grand Budapest Hotel', year: 2014, genre: 'Comedy', rating: '8.1' },
-  { title: 'Parasite', year: 2019, genre: 'Thriller', rating: '8.5' },
-  { title: 'Spirited Away', year: 2001, genre: 'Animation', rating: '8.6' },
-  { title: 'The Godfather', year: 1972, genre: 'Crime', rating: '9.2' },
-  { title: 'Whiplash', year: 2014, genre: 'Drama', rating: '8.5' },
-  { title: 'Coco', year: 2017, genre: 'Animation', rating: '8.4' },
-  { title: 'Get Out', year: 2017, genre: 'Thriller', rating: '7.7' },
-  { title: 'La La Land', year: 2016, genre: 'Comedy', rating: '8.0' },
+const weatherFeatures = [
+  {
+    icon: '🌡️',
+    title: 'Real-Time Forecasts',
+    description:
+      'Get accurate, up-to-the-minute weather data for any location worldwide.',
+  },
+  {
+    icon: '📍',
+    title: 'Location-Based',
+    description:
+      'Automatic detection of your location for instant local weather updates.',
+  },
+  {
+    icon: '🔔',
+    title: 'Severe Weather Alerts',
+    description:
+      'Stay safe with timely notifications for storms, heat waves, and more.',
+  },
+  {
+    icon: '📊',
+    title: '7-Day Forecast',
+    description: 'Plan your week ahead with detailed daily and hourly forecasts.',
+  },
 ];
 
-const GENRES = ['All', ...new Set(MOVIES.map((m) => m.genre))].sort();
-
 function App() {
-  const [selectedGenre, setSelectedGenre] = useState('All');
-  const [pickedMovie, setPickedMovie] = useState(null);
-  const [isSpinning, setIsSpinning] = useState(false);
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const filteredMovies =
-    selectedGenre === 'All'
-      ? MOVIES
-      : MOVIES.filter((m) => m.genre === selectedGenre);
-
-  const pickRandom = useCallback(() => {
-    if (filteredMovies.length === 0 || isSpinning) return;
-    setIsSpinning(true);
-    setPickedMovie(null);
-
-    setTimeout(() => {
-      const index = Math.floor(Math.random() * filteredMovies.length);
-      setPickedMovie(filteredMovies[index]);
-      setIsSpinning(false);
-    }, 800);
-  }, [filteredMovies, isSpinning]);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (email) {
+      setSubmitted(true);
+    }
+  };
 
   return (
     <div className="app">
-      <h1>Movie Picker</h1>
-      <p className="subtitle">Can't decide what to watch tonight? Let us pick for you!</p>
-
-      <div className="genre-filter">
-        {GENRES.map((genre) => (
-          <button
-            key={genre}
-            className={`genre-btn ${selectedGenre === genre ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedGenre(genre);
-              setPickedMovie(null);
-            }}
-          >
-            {genre}
-          </button>
-        ))}
-      </div>
-
-      <div className="picker-section">
-        <button
-          className="pick-btn"
-          onClick={pickRandom}
-          disabled={isSpinning || filteredMovies.length === 0}
-        >
-          {isSpinning ? 'Picking...' : 'Pick a Movie'}
-        </button>
-        <p className="movie-count">
-          {filteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} available
+      <header className="hero">
+        <p className="hero-badge">Weather App</p>
+        <h1 className="hero-title">
+          Your Personal
+          <br />
+          Weather Companion
+        </h1>
+        <p className="hero-subtitle">
+          Accurate forecasts, severe weather alerts, and hyperlocal data — all in
+          one beautiful app.
         </p>
-      </div>
+        {!submitted ? (
+          <form className="signup-form" onSubmit={handleSubmit}>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-label="Email address"
+            />
+            <button type="submit">Get Early Access</button>
+          </form>
+        ) : (
+          <p className="success-message" role="status">
+            Thanks! We'll notify you at <strong>{email}</strong> when we launch.
+          </p>
+        )}
+      </header>
 
-      {pickedMovie && (
-        <div className="movie-card" data-testid="movie-card">
-          <h2 className="movie-title">{pickedMovie.title}</h2>
-          <div className="movie-details">
-            <span className="movie-year">{pickedMovie.year}</span>
-            <span className="movie-genre">{pickedMovie.genre}</span>
-            <span className="movie-rating">IMDb {pickedMovie.rating}</span>
-          </div>
-        </div>
-      )}
-
-      <div className="movie-list">
-        <h3>All {selectedGenre !== 'All' ? selectedGenre + ' ' : ''}Movies</h3>
-        <ul>
-          {filteredMovies.map((movie) => (
-            <li
-              key={movie.title}
-              className={pickedMovie?.title === movie.title ? 'highlighted' : ''}
-            >
-              {movie.title} ({movie.year}) — {movie.rating}
-            </li>
+      <section className="features" aria-label="Features">
+        <h2 className="features-heading">Why Choose Our Weather App?</h2>
+        <div className="features-grid">
+          {weatherFeatures.map((feature) => (
+            <div key={feature.title} className="feature-card">
+              <span className="feature-icon" aria-hidden="true">
+                {feature.icon}
+              </span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </div>
           ))}
-        </ul>
-      </div>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <p>&copy; 2026 Weather App. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

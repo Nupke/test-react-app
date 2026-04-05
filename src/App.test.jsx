@@ -1,86 +1,42 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import App from './App';
 
-describe('Movie Picker App', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('renders heading', () => {
+describe('App', () => {
+  it('renders the hero title', () => {
     render(<App />);
-    expect(screen.getByText('Movie Picker')).toBeInTheDocument();
+    expect(screen.getByText(/Your Personal/)).toBeInTheDocument();
+    expect(screen.getByText(/Weather Companion/)).toBeInTheDocument();
   });
 
-  it('renders subtitle', () => {
+  it('renders the Weather App badge', () => {
     render(<App />);
-    expect(
-      screen.getByText("Can't decide what to watch tonight? Let us pick for you!"),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Weather App')).toBeInTheDocument();
   });
 
-  it('renders genre filter buttons', () => {
+  it('renders all four feature cards', () => {
     render(<App />);
-    expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Sci-Fi')).toBeInTheDocument();
-    expect(screen.getByText('Drama')).toBeInTheDocument();
+    expect(screen.getByText('Real-Time Forecasts')).toBeInTheDocument();
+    expect(screen.getByText('Location-Based')).toBeInTheDocument();
+    expect(screen.getByText('Severe Weather Alerts')).toBeInTheDocument();
+    expect(screen.getByText('7-Day Forecast')).toBeInTheDocument();
   });
 
-  it('renders pick button', () => {
+  it('shows success message after email submission', () => {
     render(<App />);
-    expect(screen.getByText('Pick a Movie')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Enter your email');
+    const button = screen.getByRole('button', { name: 'Get Early Access' });
+
+    fireEvent.change(input, { target: { value: 'test@example.com' } });
+    fireEvent.click(button);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Thanks! We'll notify you at test@example.com when we launch.",
+    );
   });
 
-  it('shows movie count', () => {
+  it('renders the footer', () => {
     render(<App />);
-    expect(screen.getByText('15 movies available')).toBeInTheDocument();
-  });
-
-  it('filters movies by genre', () => {
-    render(<App />);
-    fireEvent.click(screen.getByText('Sci-Fi'));
-    expect(screen.getByText('3 movies available')).toBeInTheDocument();
-  });
-
-  it('picks a random movie on button click', () => {
-    render(<App />);
-    fireEvent.click(screen.getByText('Pick a Movie'));
-    expect(screen.getByText('Picking...')).toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(800);
-    });
-
-    expect(screen.getByTestId('movie-card')).toBeInTheDocument();
-  });
-
-  it('highlights picked movie in the list', () => {
-    render(<App />);
-    fireEvent.click(screen.getByText('Pick a Movie'));
-
-    act(() => {
-      vi.advanceTimersByTime(800);
-    });
-
-    const highlighted = document.querySelector('.highlighted');
-    expect(highlighted).toBeInTheDocument();
-  });
-
-  it('clears picked movie when genre changes', () => {
-    render(<App />);
-    fireEvent.click(screen.getByText('Pick a Movie'));
-
-    act(() => {
-      vi.advanceTimersByTime(800);
-    });
-
-    expect(screen.getByTestId('movie-card')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Drama'));
-    expect(screen.queryByTestId('movie-card')).not.toBeInTheDocument();
+    expect(screen.getByText(/2026 Weather App/)).toBeInTheDocument();
   });
 });
