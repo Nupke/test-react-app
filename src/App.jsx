@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import LoginPage from './LoginPage';
 
 const weatherFeatures = [
   {
@@ -28,6 +29,7 @@ const weatherFeatures = [
 ];
 
 function App() {
+  const [page, setPage] = useState('home');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -38,10 +40,19 @@ function App() {
     }
   };
 
+  if (page === 'login') {
+    return <LoginPage onBack={() => setPage('home')} />;
+  }
+
   return (
     <div className="app">
       <header className="hero">
-        <p className="hero-badge">Weather App</p>
+        <nav className="nav-bar">
+          <p className="hero-badge">Weather App</p>
+          <button className="nav-login-btn" onClick={() => setPage('login')}>
+            Sign In
+          </button>
+        </nav>
         <h1 className="hero-title">
           Your Personal
           <br />
