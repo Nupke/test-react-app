@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import LoginPage from './LoginPage';
+import DashboardPage from './DashboardPage';
 
 const weatherFeatures = [
   {
@@ -32,6 +33,7 @@ function App() {
   const [page, setPage] = useState('home');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,8 +42,22 @@ function App() {
     }
   };
 
+  const handleLogin = (userEmail) => {
+    setLoggedInUser(userEmail);
+    setPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setLoggedInUser('');
+    setPage('home');
+  };
+
+  if (page === 'dashboard' && loggedInUser) {
+    return <DashboardPage user={loggedInUser} onLogout={handleLogout} />;
+  }
+
   if (page === 'login') {
-    return <LoginPage onBack={() => setPage('home')} />;
+    return <LoginPage onBack={() => setPage('home')} onLogin={handleLogin} />;
   }
 
   return (

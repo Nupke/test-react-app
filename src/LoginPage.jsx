@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './LoginPage.css';
 
-function LoginPage({ onBack }) {
+function LoginPage({ onBack, onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +20,9 @@ function LoginPage({ onBack }) {
     // Simulate login request
     setTimeout(() => {
       setLoading(false);
-      alert(`Logged in as ${email}`);
+      if (onLogin) {
+        onLogin(email);
+      }
     }, 1000);
   };
 
