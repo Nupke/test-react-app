@@ -1,0 +1,142 @@
+.dashboard {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.dashboard-header-left {
+  text-align: left;
+}
+
+.dashboard-title {
+  font-size: 1.75rem;
+  margin: 0;
+  color: #0f172a;
+}
+
+.dashboard-welcome {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.dashboard-logout-btn {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.dashboard-logout-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.stat-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: left;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-value {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-change {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.stat-change.positive {
+  color: #16a34a;
+}
+
+.stat-change.negative {
+  color: #dc2626;
+}
+
+/* Recent Actions */
+.section-heading {
+  font-size: 1.25rem;
+  color: #0f172a;
+  margin: 0 0 1rem;
+  text-align: left;
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.action-item:last-child {
+  border-bottom: none;
+}
+
+.action-info {
+  text-align: left;
+}
+
+.action-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.action-location {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.action-time {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
