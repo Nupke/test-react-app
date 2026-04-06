@@ -30,6 +30,12 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Password')).toBeRequired();
   });
 
+  it('renders remember me checkbox and forgot password link', () => {
+    render(<LoginPage />);
+    expect(screen.getByLabelText('Remember me')).toBeInTheDocument();
+    expect(screen.getByText('Forgot password?')).toBeInTheDocument();
+  });
+
   it('renders the sign up link', () => {
     render(<LoginPage />);
     expect(screen.getByText('Sign up')).toBeInTheDocument();
