@@ -4,6 +4,7 @@ import './LoginPage.css';
 function LoginPage({ onBack, onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +62,20 @@ function LoginPage({ onBack, onLogin }) {
               required
               autoComplete="current-password"
             />
+          </div>
+
+          <div className="form-options">
+            <label className="remember-me">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Remember me
+            </label>
+            <a href="#forgot" className="forgot-password-link">
+              Forgot password?
+            </a>
           </div>
 
           {error && (
