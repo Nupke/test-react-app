@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './App.css';
 import LoginPage from './LoginPage';
+import ProfilePage from './ProfilePage';
 
 const weatherFeatures = [
   {
@@ -44,11 +45,18 @@ function App() {
     return <LoginPage onBack={() => setPage('home')} />;
   }
 
+  if (page === 'profile') {
+    return <ProfilePage onBack={() => setPage('home')} />;
+  }
+
   return (
     <div className="app">
       <header className="hero">
         <nav className="nav-bar">
           <p className="hero-badge">Weather App</p>
+          <button className="nav-login-btn" onClick={() => setPage('profile')}>
+            Profile
+          </button>
           <button className="nav-login-btn" onClick={() => setPage('login')}>
             Sign In
           </button>
