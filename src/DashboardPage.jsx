@@ -40,7 +40,7 @@ const recentActions = [
   },
 ];
 
-function DashboardPage({ user, onLogout }) {
+function DashboardPage({ user, onLogout, onNavigate }) {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -48,9 +48,14 @@ function DashboardPage({ user, onLogout }) {
           <h1 className="dashboard-title">Dashboard</h1>
           <p className="dashboard-welcome">Welcome back, {user}</p>
         </div>
-        <button className="dashboard-logout-btn" onClick={onLogout}>
-          Sign Out
-        </button>
+        <div className="dashboard-header-actions">
+          <button className="dashboard-upgrader-btn" onClick={() => onNavigate('upgrader')}>
+            Skin Upgrader
+          </button>
+          <button className="dashboard-logout-btn" onClick={onLogout}>
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <section className="stats-grid" aria-label="Statistics">

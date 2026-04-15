@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './App.css';
 import LoginPage from './LoginPage';
 import DashboardPage from './DashboardPage';
+import UpgraderPage from './UpgraderPage';
 
 const weatherFeatures = [
   {
@@ -52,8 +53,24 @@ function App() {
     setPage('home');
   };
 
+  if (page === 'upgrader' && loggedInUser) {
+    return (
+      <UpgraderPage
+        user={loggedInUser}
+        onBack={() => setPage('dashboard')}
+        steamApiKey=""
+      />
+    );
+  }
+
   if (page === 'dashboard' && loggedInUser) {
-    return <DashboardPage user={loggedInUser} onLogout={handleLogout} />;
+    return (
+      <DashboardPage
+        user={loggedInUser}
+        onLogout={handleLogout}
+        onNavigate={setPage}
+      />
+    );
   }
 
   if (page === 'login') {
