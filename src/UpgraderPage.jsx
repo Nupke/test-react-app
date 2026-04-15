@@ -3,6 +3,7 @@ import './UpgraderPage.css';
 
 const STEAM_API_BASE = 'https://api.steampowered.com';
 const STEAM_CDN = 'https://community.akamai.steamstatic.com/economy/image';
+const STEAM_MARKET_BASE = 'https://steamcommunity.com/market';
 
 const UPGRADE_MULTIPLIERS = [
   { label: '1.5x', value: 1.5, chance: 66 },
@@ -22,11 +23,21 @@ const RARITY_COLORS = {
   Contraband: '#e4ae39',
 };
 
+const RARITY_ORDER = [
+  'Consumer Grade',
+  'Industrial Grade',
+  'Mil-Spec',
+  'Restricted',
+  'Classified',
+  'Covert',
+  'Contraband',
+];
+
 function formatPrice(cents) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function UpgraderPage({ user, onBack, steamApiKey }) {
+function UpgraderPage({ user, onBack, steamApiKey: initialApiKey }) {
   const [inventory, setInventory] = useState([]);
   const [selectedSkin, setSelectedSkin] = useState(null);
   const [multiplier, setMultiplier] = useState(UPGRADE_MULTIPLIERS[1]);
@@ -37,8 +48,11 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
   const [steamId, setSteamId] = useState('');
   const [steamIdInput, setSteamIdInput] = useState('');
   const [priceData, setPriceData] = useState({});
+  const [marketPrices, setMarketPrices] = useState({});
   const [tradeUrl, setTradeUrl] = useState('');
   const [tradeUrlInput, setTradeUrlInput] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState(initialApiKey || '');
+  const [steamApiKey, setSteamApiKey] = useState(initialApiKey || '');
   const [upgradeHistory, setUpgradeHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('upgrader');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,12 +62,39 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
   const [wheelAngle, setWheelAngle] = useState(0);
   const wheelRef = useRef(null);
   const [stats, setStats] = useState({ wins: 0, losses: 0, totalSpent: 0, totalWon: 0 });
+  const [priceCheckItem, setPriceCheckItem] = useState('');
+  const [priceCheckResult, setPriceCheckResult] = useState(null);
+  const [priceCheckLoading, setPriceCheckLoading] = useState(false);
+  const [floatValues, setFloatValues] = useState({});
+
+  const fetchMarketPrice = useCallback(async (marketHashName) => {
+    try {
+      const res = await fetch(
+        `${STEAM_MARKET_BASE}/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          return {
+            lowestPrice: data.lowest_price || null,
+            medianPrice: data.median_price || null,
+            volume: data.volume || '0',
+          };
+        }
+      }
+    } catch {
+      // market price is best-effort
+    }
+    return null;
+  }, []);
 
   const fetchInventory = useCallback(async (id) => {
     setLoading(true);
     setError('');
     setInventory([]);
     setSelectedSkin(null);
+    setMarketPrices({});
+    setFloatValues({});
 
     try {
       const inventoryRes = await fetch(
@@ -70,19 +111,36 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
         throw new Error('No CS2 items found. Make sure the inventory is public.');
       }
 
+      const assetMap = {};
+      if (inventoryData.assets) {
+        for (const asset of inventoryData.assets) {
+          assetMap[`${asset.classid}_${asset.instanceid}`] = asset.assetid;
+        }
+      }
+
       const items = inventoryData.descriptions
         .filter((item) => item.marketable === 1)
-        .map((item) => ({
-          id: item.classid,
-          assetId: item.instanceid,
-          name: item.market_hash_name || item.name,
-          icon: item.icon_url ? `${STEAM_CDN}/${item.icon_url}` : null,
-          rarity: extractRarity(item.tags),
-          type: extractType(item.tags),
-          exterior: extractExterior(item.tags),
-          tradable: item.tradable === 1,
-          nameColor: item.name_color ? `#${item.name_color}` : null,
-        }));
+        .map((item) => {
+          const inspectAction = item.actions?.find((a) =>
+            a.link?.includes('csgo_econ_action_preview')
+          );
+          return {
+            id: item.classid,
+            assetId: assetMap[`${item.classid}_${item.instanceid}`] || item.instanceid,
+            instanceId: item.instanceid,
+            name: item.market_hash_name || item.name,
+            icon: item.icon_url ? `${STEAM_CDN}/${item.icon_url}` : null,
+            iconLarge: item.icon_url_large ? `${STEAM_CDN}/${item.icon_url_large}` : null,
+            rarity: extractRarity(item.tags),
+            type: extractType(item.tags),
+            exterior: extractExterior(item.tags),
+            tradable: item.tradable === 1,
+            nameColor: item.name_color ? `#${item.name_color}` : null,
+            marketHashName: item.market_hash_name,
+            inspectLink: inspectAction?.link || null,
+            commodity: item.commodity === 1,
+          };
+        });
 
       setInventory(items);
 
@@ -107,12 +165,23 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
           // price fetch is best-effort
         }
       }
+
+      const marketPricesBatch = {};
+      const uniqueNames = [...new Set(items.map((i) => i.marketHashName).filter(Boolean))];
+      for (const name of uniqueNames.slice(0, 15)) {
+        const price = await fetchMarketPrice(name);
+        if (price) {
+          marketPricesBatch[name] = price;
+        }
+        await new Promise((r) => setTimeout(r, 350));
+      }
+      setMarketPrices(marketPricesBatch);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [steamApiKey]);
+  }, [steamApiKey, fetchMarketPrice]);
 
   const fetchTradeOffers = useCallback(async () => {
     if (!steamApiKey) return;
@@ -202,6 +271,15 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
     }
   }, [steamApiKey, tradeUrl]);
 
+  const handlePriceCheck = useCallback(async (itemName) => {
+    if (!itemName) return;
+    setPriceCheckLoading(true);
+    setPriceCheckResult(null);
+    const result = await fetchMarketPrice(itemName);
+    setPriceCheckResult(result || { error: 'Price not found on Steam Market' });
+    setPriceCheckLoading(false);
+  }, [fetchMarketPrice]);
+
   useEffect(() => {
     if (steamId) {
       fetchInventory(steamId);
@@ -228,6 +306,13 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
     }
   };
 
+  const handleApiKeySubmit = (e) => {
+    e.preventDefault();
+    if (apiKeyInput.trim()) {
+      setSteamApiKey(apiKeyInput.trim());
+    }
+  };
+
   const handleUpgrade = () => {
     if (!selectedSkin || isUpgrading) return;
 
@@ -241,7 +326,7 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
       const roll = Math.random() * 100;
       const won = roll < multiplier.chance;
 
-      const basePrice = priceData[selectedSkin.id] || Math.floor(Math.random() * 5000) + 100;
+      const basePrice = getItemPrice(selectedSkin) || Math.floor(Math.random() * 5000) + 100;
       const upgradedPrice = Math.round(basePrice * multiplier.value);
 
       const result = {
@@ -282,6 +367,16 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
 
   const rarityColor = (rarity) => RARITY_COLORS[rarity] || '#b0c3d9';
 
+  const getItemPrice = useCallback((item) => {
+    if (priceData[item.id]) return priceData[item.id];
+    const mp = marketPrices[item.marketHashName];
+    if (mp?.lowestPrice) {
+      const parsed = parseFloat(mp.lowestPrice.replace(/[^0-9.]/g, ''));
+      if (!isNaN(parsed)) return Math.round(parsed * 100);
+    }
+    return 0;
+  }, [priceData, marketPrices]);
+
   const filteredInventory = inventory
     .filter((item) => {
       if (!searchQuery) return true;
@@ -290,11 +385,10 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
     .sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       if (sortBy === 'rarity') {
-        const order = Object.keys(RARITY_COLORS);
-        return order.indexOf(b.rarity) - order.indexOf(a.rarity);
+        return RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity);
       }
       if (sortBy === 'price') {
-        return (priceData[b.id] || 0) - (priceData[a.id] || 0);
+        return getItemPrice(b) - getItemPrice(a);
       }
       return 0;
     });
@@ -344,6 +438,20 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
               <button type="submit">Load Inventory</button>
             </form>
             <div className="trade-url-section">
+              <p className="trade-url-label">Steam API Key (for trading & prices)</p>
+              <form className="steam-id-form" onSubmit={handleApiKeySubmit}>
+                <input
+                  type="password"
+                  placeholder="Enter your Steam Web API key"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  aria-label="Steam API Key"
+                />
+                <button type="submit">{steamApiKey ? 'Update' : 'Save'}</button>
+              </form>
+              {steamApiKey && <p className="api-key-status connected">API Key connected</p>}
+            </div>
+            <div className="trade-url-section">
               <p className="trade-url-label">Trade URL (optional, for auto-trading)</p>
               <form className="steam-id-form" onSubmit={handleTradeUrlSubmit}>
                 <input
@@ -356,10 +464,14 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                 <button type="submit">Save</button>
               </form>
             </div>
-            <p className="connect-hint">
-              Steam API Key: {steamApiKey ? 'Connected' : 'Not configured'}
-              {tradeUrl && ' | Trade URL: Saved'}
-            </p>
+            <div className="connect-status-bar">
+              <span className={`status-indicator ${steamApiKey ? 'active' : ''}`}>
+                API Key: {steamApiKey ? 'Connected' : 'Not set'}
+              </span>
+              <span className={`status-indicator ${tradeUrl ? 'active' : ''}`}>
+                Trade URL: {tradeUrl ? 'Saved' : 'Not set'}
+              </span>
+            </div>
           </div>
         </section>
       ) : (
@@ -370,6 +482,12 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
               onClick={() => setActiveTab('upgrader')}
             >
               Upgrader
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'market' ? 'active' : ''}`}
+              onClick={() => setActiveTab('market')}
+            >
+              Market Prices
             </button>
             <button
               className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
@@ -450,8 +568,13 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                           <div className="item-placeholder" />
                         )}
                         <span className="item-name">{item.name}</span>
-                        {priceData[item.id] && (
-                          <span className="item-price">{formatPrice(priceData[item.id])}</span>
+                        {getItemPrice(item) > 0 && (
+                          <span className="item-price">{formatPrice(getItemPrice(item))}</span>
+                        )}
+                        {marketPrices[item.marketHashName] && (
+                          <span className="item-market-price">
+                            {marketPrices[item.marketHashName].lowestPrice}
+                          </span>
                         )}
                         <span
                           className="item-rarity-dot"
@@ -499,9 +622,9 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                       <div className="upgrade-display">
                         {selectedSkin ? (
                           <div className="selected-skin-card">
-                            {selectedSkin.icon ? (
+                            {(selectedSkin.iconLarge || selectedSkin.icon) ? (
                               <img
-                                src={selectedSkin.icon}
+                                src={selectedSkin.iconLarge || selectedSkin.icon}
                                 alt={selectedSkin.name}
                                 className="selected-skin-image"
                               />
@@ -512,9 +635,24 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                             {selectedSkin.exterior && (
                               <span className="skin-exterior">{selectedSkin.exterior}</span>
                             )}
-                            {priceData[selectedSkin.id] && (
+                            {floatValues[selectedSkin.assetId] != null && (
+                              <span className="skin-float">
+                                Float: {floatValues[selectedSkin.assetId].toFixed(6)}
+                              </span>
+                            )}
+                            {getItemPrice(selectedSkin) > 0 && (
                               <span className="skin-price">
-                                {formatPrice(priceData[selectedSkin.id])}
+                                {formatPrice(getItemPrice(selectedSkin))}
+                              </span>
+                            )}
+                            {marketPrices[selectedSkin.marketHashName] && (
+                              <span className="skin-market-price">
+                                Market: {marketPrices[selectedSkin.marketHashName].lowestPrice}
+                                {marketPrices[selectedSkin.marketHashName].volume !== '0' && (
+                                  <span className="skin-volume">
+                                    {' '}({marketPrices[selectedSkin.marketHashName].volume} sold/day)
+                                  </span>
+                                )}
                               </span>
                             )}
                             {!selectedSkin.tradable && (
@@ -546,9 +684,9 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                           <div className="target-glow" />
                           <span className="target-multiplier">{multiplier.label}</span>
                           <span className="target-chance">{multiplier.chance}% chance</span>
-                          {selectedSkin && priceData[selectedSkin.id] && (
+                          {selectedSkin && getItemPrice(selectedSkin) > 0 && (
                             <span className="target-potential">
-                              {formatPrice(Math.round(priceData[selectedSkin.id] * multiplier.value))}
+                              {formatPrice(Math.round(getItemPrice(selectedSkin) * multiplier.value))}
                             </span>
                           )}
                         </div>
@@ -601,9 +739,19 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                       </span>
                     </div>
                     <div className="info-row">
+                      <span>Exterior</span>
+                      <span>{selectedSkin.exterior || 'N/A'}</span>
+                    </div>
+                    <div className="info-row">
                       <span>Tradable</span>
                       <span>{selectedSkin.tradable ? 'Yes' : 'No'}</span>
                     </div>
+                    {floatValues[selectedSkin.assetId] != null && (
+                      <div className="info-row">
+                        <span>Float Value</span>
+                        <span>{floatValues[selectedSkin.assetId].toFixed(6)}</span>
+                      </div>
+                    )}
                     <div className="info-row">
                       <span>Multiplier</span>
                       <span>{multiplier.label}</span>
@@ -612,23 +760,133 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                       <span>Win Chance</span>
                       <span>{multiplier.chance}%</span>
                     </div>
-                    {priceData[selectedSkin.id] && (
+                    {getItemPrice(selectedSkin) > 0 && (
                       <>
                         <div className="info-row">
                           <span>Current Value</span>
-                          <span>{formatPrice(priceData[selectedSkin.id])}</span>
+                          <span>{formatPrice(getItemPrice(selectedSkin))}</span>
                         </div>
                         <div className="info-row highlight">
                           <span>Potential Value</span>
                           <span>
-                            {formatPrice(Math.round(priceData[selectedSkin.id] * multiplier.value))}
+                            {formatPrice(Math.round(getItemPrice(selectedSkin) * multiplier.value))}
                           </span>
                         </div>
                       </>
                     )}
+                    {marketPrices[selectedSkin.marketHashName] && (
+                      <div className="info-row">
+                        <span>Market Price</span>
+                        <span className="market-price-value">
+                          {marketPrices[selectedSkin.marketHashName].lowestPrice}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </main>
+            </div>
+          )}
+
+          {activeTab === 'market' && (
+            <div className="market-panel">
+              <h2>Steam Market Price Checker</h2>
+              <div className="price-checker">
+                <form
+                  className="price-check-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handlePriceCheck(priceCheckItem);
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Enter item name (e.g., AK-47 | Redline (Field-Tested))"
+                    value={priceCheckItem}
+                    onChange={(e) => setPriceCheckItem(e.target.value)}
+                    aria-label="Item name for price check"
+                  />
+                  <button type="submit" disabled={priceCheckLoading || !priceCheckItem}>
+                    {priceCheckLoading ? 'Checking...' : 'Check Price'}
+                  </button>
+                </form>
+
+                {priceCheckResult && !priceCheckResult.error && (
+                  <div className="price-check-result">
+                    <h3>{priceCheckItem}</h3>
+                    <div className="price-details">
+                      {priceCheckResult.lowestPrice && (
+                        <div className="price-detail">
+                          <span className="price-label">Lowest Price</span>
+                          <span className="price-value">{priceCheckResult.lowestPrice}</span>
+                        </div>
+                      )}
+                      {priceCheckResult.medianPrice && (
+                        <div className="price-detail">
+                          <span className="price-label">Median Price</span>
+                          <span className="price-value">{priceCheckResult.medianPrice}</span>
+                        </div>
+                      )}
+                      <div className="price-detail">
+                        <span className="price-label">24h Volume</span>
+                        <span className="price-value">{priceCheckResult.volume} sold</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {priceCheckResult?.error && (
+                  <div className="price-check-error">{priceCheckResult.error}</div>
+                )}
+              </div>
+
+              <div className="market-inventory-prices">
+                <h3>Your Inventory Market Prices</h3>
+                {Object.keys(marketPrices).length === 0 ? (
+                  <p className="empty-state">Loading market prices for your inventory...</p>
+                ) : (
+                  <div className="market-price-list">
+                    {inventory
+                      .filter((item) => marketPrices[item.marketHashName])
+                      .sort((a, b) => {
+                        const priceA = parseFloat((marketPrices[a.marketHashName]?.lowestPrice || '0').replace(/[^0-9.]/g, ''));
+                        const priceB = parseFloat((marketPrices[b.marketHashName]?.lowestPrice || '0').replace(/[^0-9.]/g, ''));
+                        return priceB - priceA;
+                      })
+                      .map((item) => (
+                        <div key={item.id} className="market-price-entry">
+                          <div className="market-item-info">
+                            {item.icon && (
+                              <img src={item.icon} alt={item.name} className="market-item-icon" />
+                            )}
+                            <div>
+                              <span className="market-item-name">{item.name}</span>
+                              <span
+                                className="market-item-rarity"
+                                style={{ color: rarityColor(item.rarity) }}
+                              >
+                                {item.rarity} {item.exterior && `| ${item.exterior}`}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="market-item-prices">
+                            <span className="market-lowest">
+                              {marketPrices[item.marketHashName].lowestPrice}
+                            </span>
+                            {marketPrices[item.marketHashName].medianPrice && (
+                              <span className="market-median">
+                                Median: {marketPrices[item.marketHashName].medianPrice}
+                              </span>
+                            )}
+                            <span className="market-volume">
+                              {marketPrices[item.marketHashName].volume} sold/day
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

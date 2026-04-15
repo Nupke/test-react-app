@@ -58,7 +58,6 @@ function App() {
       <UpgraderPage
         user={loggedInUser}
         onBack={() => setPage('dashboard')}
-        steamApiKey=""
       />
     );
   }
