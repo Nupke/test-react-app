@@ -62,6 +62,82 @@
   border-color: #475569;
 }
 
+/* Player Profile */
+.player-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+
+.player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.player-name {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.player-status {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.player-status.online {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.player-status.offline {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.1);
+}
+
+/* Profile Stats Card */
+.profile-stats-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.profile-stats-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  border: 2px solid #0ea5e9;
+}
+
+.profile-stats-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-stats-info h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #f1f5f9;
+}
+
+.profile-stats-info span {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
 /* Tabs */
 .upgrader-tabs {
   display: flex;
@@ -93,6 +169,34 @@
 .tab-btn.active {
   background: #0ea5e9;
   color: #fff;
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 0.2rem;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: #334155;
+  color: #e2e8f0;
 }
 
 /* Steam Connect */
@@ -286,6 +390,39 @@
   cursor: pointer;
 }
 
+/* Inventory Filters */
+.inventory-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.filter-rarity {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.tradable-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tradable-filter input {
+  accent-color: #0ea5e9;
+}
+
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -376,6 +513,12 @@
   font-weight: 600;
 }
 
+.item-float {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
 .item-rarity-dot {
   width: 6px;
   height: 6px;
@@ -426,25 +569,47 @@
   margin-bottom: 2rem;
 }
 
+/* Selected Skins Area */
+.selected-skins-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.batch-total {
+  width: 100%;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #22c55e;
+  padding: 0.5rem;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 6px;
+  margin-top: 0.25rem;
+}
+
 .selected-skin-card {
   background: #0f172a;
   border: 1px solid #334155;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   text-align: center;
-  min-width: 180px;
+  min-width: 140px;
+  max-width: 180px;
 }
 
 .selected-skin-image {
-  width: 120px;
-  height: 90px;
+  width: 100px;
+  height: 75px;
   object-fit: contain;
   margin-bottom: 0.5rem;
 }
 
 .selected-skin-placeholder {
-  width: 120px;
-  height: 90px;
+  width: 100px;
+  height: 75px;
   background: #1e293b;
   border-radius: 8px;
   margin: 0 auto 0.5rem;
@@ -452,14 +617,21 @@
 
 .selected-skin-card h3 {
   margin: 0 0 0.25rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #f1f5f9;
 }
 
 .skin-exterior {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #94a3b8;
+}
+
+.skin-float {
+  display: block;
+  font-size: 0.65rem;
+  color: #64748b;
+  font-family: monospace;
 }
 
 .skin-price {
@@ -485,6 +657,30 @@
   text-align: center;
   min-width: 180px;
   color: #475569;
+}
+
+/* Result Skins */
+.result-skins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.result-skin-tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  color: #94a3b8;
+}
+
+.result-batch-info {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 0.5rem;
 }
 
 /* Upgrade Wheel */
@@ -1024,7 +1220,8 @@
   background: rgba(34, 197, 94, 0.1);
 }
 
-.status-accepted {
+.status-accepted,
+.status-completed {
   color: #0ea5e9;
   background: rgba(14, 165, 233, 0.1);
 }
@@ -1036,9 +1233,121 @@
   background: rgba(220, 38, 38, 0.1);
 }
 
+.status-other {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+}
+
 .trade-time {
   font-size: 0.7rem;
   color: #475569;
+}
+
+/* Market Panel */
+.market-panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.market-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #f1f5f9;
+}
+
+.market-hint {
+  margin: 0 0 1.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.market-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.market-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.market-item-image {
+  width: 60px;
+  height: 45px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.market-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.market-item-name {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.market-item-rarity {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.market-item-exterior {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.market-item-float {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.market-item-prices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.market-price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.api-price {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.fetch-price-btn {
+  padding: 0.3rem 0.75rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.fetch-price-btn:hover {
+  background: #475569;
 }
 
 /* Stats Panel */
@@ -1157,5 +1466,23 @@
 
   .upgrader-tabs {
     flex-wrap: wrap;
+  }
+
+  .player-profile {
+    display: none;
+  }
+
+  .profile-stats-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .selected-skins-area {
+    flex-direction: column;
+  }
+
+  .inventory-filters {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
