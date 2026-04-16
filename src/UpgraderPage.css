@@ -1110,8 +1110,254 @@
   letter-spacing: 0.05em;
 }
 
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0.35rem;
+  margin-bottom: 1.25rem;
+  width: max-content;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 7px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+.mode-btn:hover:not(.active) {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Target Upgrade Display */
+.target-upgrade-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.target-inputs,
+.target-search {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 240px;
+}
+
+.selected-inputs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.selected-input {
+  display: grid;
+  grid-template-columns: 48px 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.selected-input img {
+  width: 48px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.input-name {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.input-price {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+.remove-input {
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.35rem;
+}
+
+.remove-input:hover {
+  color: #ef4444;
+}
+
+.total-value {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: right;
+}
+
+.total-value strong {
+  color: #22c55e;
+}
+
+.target-search-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+
+.target-search-input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.search-status {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.target-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.target-result {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.target-result:hover:not(:disabled) {
+  border-color: #0ea5e9;
+}
+
+.target-result:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.target-result img {
+  width: 48px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.result-name {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.target-selected {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #1e293b;
+  border: 1px solid #0ea5e9;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.target-selected img {
+  width: 64px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.target-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.target-name {
+  font-size: 0.9rem;
+  color: #f1f5f9;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-price {
+  font-size: 0.85rem;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.target-chance-label {
+  font-size: 0.75rem;
+  color: #0ea5e9;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .target-upgrade-display {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-toggle {
+    width: 100%;
+  }
+
+  .mode-btn {
+    flex: 1;
+    text-align: center;
+  }
+
   .upgrader-layout {
     grid-template-columns: 1fr;
   }

@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import './UpgraderPage.css';
 
 const STEAM_API_BASE = 'https://api.steampowered.com';
+const STEAM_COMMUNITY_BASE = 'https://steamcommunity.com';
 const STEAM_CDN = 'https://community.akamai.steamstatic.com/economy/image';
+const HOUSE_EDGE = 0.92;
 
 const UPGRADE_MULTIPLIERS = [
   { label: '1.5x', value: 1.5, chance: 66 },
@@ -11,6 +13,18 @@ const UPGRADE_MULTIPLIERS = [
   { label: '5x', value: 5, chance: 20 },
   { label: '10x', value: 10, chance: 10 },
 ];
+
+function chanceFromRatio(inputCents, targetCents) {
+  if (!inputCents || !targetCents || targetCents <= inputCents) return 0;
+  return Math.min(95, Math.max(1, (inputCents / targetCents) * 100 * HOUSE_EDGE));
+}
+
+function parseMarketPrice(value) {
+  if (!value) return 0;
+  const match = String(value).replace(/,/g, '.').match(/[\d.]+/);
+  if (!match) return 0;
+  return Math.round(parseFloat(match[0]) * 100);
+}
 
 const RARITY_COLORS = {
   'Consumer Grade': '#b0c3d9',
@@ -48,6 +62,13 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
   const [wheelAngle, setWheelAngle] = useState(0);
   const wheelRef = useRef(null);
   const [stats, setStats] = useState({ wins: 0, losses: 0, totalSpent: 0, totalWon: 0 });
+  const [upgradeMode, setUpgradeMode] = useState('classic');
+  const [selectedSkins, setSelectedSkins] = useState([]);
+  const [targetQuery, setTargetQuery] = useState('');
+  const [targetResults, setTargetResults] = useState([]);
+  const [targetSkin, setTargetSkin] = useState(null);
+  const [targetSearching, setTargetSearching] = useState(false);
+  const [marketPrices, setMarketPrices] = useState({});
 
   const fetchInventory = useCallback(async (id) => {
     setLoading(true);
@@ -158,6 +179,52 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
     }
   }, [steamApiKey]);
 
+  const fetchMarketPrice = useCallback(async (marketHashName) => {
+    if (!marketHashName) return 0;
+    if (marketPrices[marketHashName] !== undefined) return marketPrices[marketHashName];
+
+    try {
+      const res = await fetch(
+        `${STEAM_COMMUNITY_BASE}/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`
+      );
+      if (!res.ok) return 0;
+      const data = await res.json();
+      const cents = parseMarketPrice(data.lowest_price || data.median_price);
+      setMarketPrices((prev) => ({ ...prev, [marketHashName]: cents }));
+      return cents;
+    } catch {
+      return 0;
+    }
+  }, [marketPrices]);
+
+  const searchTargetSkins = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setTargetResults([]);
+      return;
+    }
+    setTargetSearching(true);
+    try {
+      const res = await fetch(
+        `${STEAM_COMMUNITY_BASE}/market/search/render/?appid=730&norender=1&count=20&query=${encodeURIComponent(query)}`
+      );
+      if (!res.ok) throw new Error('Market search failed');
+      const data = await res.json();
+      const results = (data.results || []).map((r) => ({
+        name: r.hash_name || r.name,
+        icon: r.asset_description?.icon_url ? `${STEAM_CDN}/${r.asset_description.icon_url}` : null,
+        priceCents: parseMarketPrice(r.sell_price_text),
+        volume: r.sell_listings || 0,
+        rarity: extractRarity(r.asset_description?.tags),
+        exterior: extractExterior(r.asset_description?.tags),
+      }));
+      setTargetResults(results);
+    } catch {
+      setTargetResults([]);
+    } finally {
+      setTargetSearching(false);
+    }
+  }, []);
+
   const sendTradeOffer = useCallback(async (itemsToGive, itemsToReceive) => {
     if (!steamApiKey || !tradeUrl) {
       setError('Trade URL and Steam API key are required to send trade offers.');
@@ -213,6 +280,20 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
       fetchTradeOffers();
     }
   }, [steamId, steamApiKey, fetchTradeOffers]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (upgradeMode === 'target') searchTargetSkins(targetQuery);
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [targetQuery, upgradeMode, searchTargetSkins]);
+
+  useEffect(() => {
+    if (upgradeMode !== 'target') return;
+    selectedSkins.forEach((s) => {
+      if (marketPrices[s.name] === undefined) fetchMarketPrice(s.name);
+    });
+  }, [selectedSkins, upgradeMode, marketPrices, fetchMarketPrice]);
 
   const handleSteamIdSubmit = (e) => {
     e.preventDefault();
@@ -278,6 +359,83 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
   const resetUpgrade = () => {
     setUpgradeResult(null);
     setSelectedSkin(null);
+    setSelectedSkins([]);
+    setTargetSkin(null);
+  };
+
+  const toggleMultiSelect = (item) => {
+    setUpgradeResult(null);
+    setSelectedSkins((prev) =>
+      prev.find((s) => s.id === item.id)
+        ? prev.filter((s) => s.id !== item.id)
+        : [...prev, item]
+    );
+  };
+
+  const inputTotalCents = selectedSkins.reduce(
+    (sum, s) => sum + (marketPrices[s.name] ?? priceData[s.id] ?? 0),
+    0
+  );
+
+  const targetChance = targetSkin
+    ? chanceFromRatio(inputTotalCents, targetSkin.priceCents)
+    : 0;
+
+  const handleTargetUpgrade = () => {
+    if (!targetSkin || selectedSkins.length === 0 || isUpgrading) return;
+    if (inputTotalCents <= 0 || targetSkin.priceCents <= inputTotalCents) {
+      setError('Input value must be less than target value.');
+      return;
+    }
+
+    setIsUpgrading(true);
+    setUpgradeResult(null);
+    setWheelAngle((prev) => prev + 1440 + Math.random() * 720);
+
+    setTimeout(() => {
+      const roll = Math.random() * 100;
+      const won = roll < targetChance;
+
+      const result = {
+        won,
+        mode: 'target',
+        inputSkins: selectedSkins,
+        originalPrice: inputTotalCents,
+        targetSkin,
+        upgradedPrice: won ? targetSkin.priceCents : 0,
+        chance: targetChance.toFixed(1),
+        roll: roll.toFixed(2),
+        timestamp: new Date().toLocaleString(),
+      };
+
+      setUpgradeResult(result);
+      setUpgradeHistory((prev) => [
+        {
+          ...result,
+          originalSkin: {
+            name: `${selectedSkins.length} item(s)`,
+            icon: selectedSkins[0]?.icon,
+          },
+          multiplierLabel: `→ ${targetSkin.name}`,
+        },
+        ...prev,
+      ].slice(0, 50));
+      setStats((prev) => ({
+        wins: prev.wins + (won ? 1 : 0),
+        losses: prev.losses + (won ? 0 : 1),
+        totalSpent: prev.totalSpent + inputTotalCents,
+        totalWon: prev.totalWon + (won ? targetSkin.priceCents : 0),
+      }));
+
+      if (won && steamApiKey && tradeUrl) {
+        const assets = selectedSkins
+          .filter((s) => s.tradable)
+          .map((s) => ({ appid: 730, contextid: '2', assetid: s.assetId }));
+        if (assets.length > 0) sendTradeOffer(assets, []);
+      }
+
+      setIsUpgrading(false);
+    }, 2500);
   };
 
   const rarityColor = (rarity) => RARITY_COLORS[rarity] || '#b0c3d9';
@@ -399,11 +557,35 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
           )}
 
           {activeTab === 'upgrader' && (
+            <>
+              <div className="mode-toggle" role="tablist" aria-label="Upgrade mode">
+                <button
+                  role="tab"
+                  aria-selected={upgradeMode === 'classic'}
+                  className={`mode-btn ${upgradeMode === 'classic' ? 'active' : ''}`}
+                  onClick={() => { setUpgradeMode('classic'); resetUpgrade(); }}
+                >
+                  Classic Multiplier
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={upgradeMode === 'target'}
+                  className={`mode-btn ${upgradeMode === 'target' ? 'active' : ''}`}
+                  onClick={() => { setUpgradeMode('target'); resetUpgrade(); }}
+                >
+                  Target Skin (Multi-Input)
+                </button>
+              </div>
             <div className="upgrader-layout">
               <aside className="inventory-panel" aria-label="Inventory">
                 <div className="panel-header">
                   <h2>Your Inventory</h2>
-                  <span className="item-count">{filteredInventory.length} items</span>
+                  <span className="item-count">
+                    {filteredInventory.length} items
+                    {upgradeMode === 'target' && selectedSkins.length > 0 && (
+                      <> &middot; {selectedSkins.length} selected</>
+                    )}
+                  </span>
                 </div>
 
                 <div className="inventory-controls">
@@ -434,13 +616,22 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                   </div>
                 ) : (
                   <div className="inventory-grid">
-                    {filteredInventory.map((item) => (
+                    {filteredInventory.map((item) => {
+                      const isMultiSelected = selectedSkins.some((s) => s.id === item.id);
+                      const isSelected = upgradeMode === 'target'
+                        ? isMultiSelected
+                        : selectedSkin?.id === item.id;
+                      return (
                       <button
                         key={item.id}
-                        className={`inventory-item ${selectedSkin?.id === item.id ? 'selected' : ''}`}
+                        className={`inventory-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => {
-                          setSelectedSkin(item);
-                          setUpgradeResult(null);
+                          if (upgradeMode === 'target') {
+                            toggleMultiSelect(item);
+                          } else {
+                            setSelectedSkin(item);
+                            setUpgradeResult(null);
+                          }
                         }}
                         style={{ borderColor: rarityColor(item.rarity) }}
                       >
@@ -459,7 +650,8 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                         />
                         {!item.tradable && <span className="item-lock" title="Not tradable">lock</span>}
                       </button>
-                    ))}
+                      );
+                    })}
                     {!loading && filteredInventory.length === 0 && !error && (
                       <p className="empty-inventory">
                         {searchQuery ? 'No items match your search' : 'No marketable items found'}
@@ -475,17 +667,28 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                     <div className={`upgrade-result ${upgradeResult.won ? 'win' : 'lose'}`}>
                       <div className="result-icon">{upgradeResult.won ? 'WIN' : 'LOST'}</div>
                       <h3>{upgradeResult.won ? 'Upgrade Successful!' : 'Upgrade Failed'}</h3>
-                      <p className="result-skin">{upgradeResult.originalSkin.name}</p>
+                      <p className="result-skin">
+                        {upgradeResult.mode === 'target'
+                          ? `${upgradeResult.inputSkins.length} item(s) → ${upgradeResult.targetSkin.name}`
+                          : upgradeResult.originalSkin.name}
+                      </p>
                       {upgradeResult.won ? (
                         <p className="result-value">
                           {formatPrice(upgradeResult.originalPrice)} &rarr;{' '}
                           {formatPrice(upgradeResult.upgradedPrice)}
                         </p>
                       ) : (
-                        <p className="result-value">Skin lost in upgrade attempt</p>
+                        <p className="result-value">
+                          {upgradeResult.mode === 'target'
+                            ? 'Items lost in upgrade attempt'
+                            : 'Skin lost in upgrade attempt'}
+                        </p>
                       )}
                       <p className="result-roll">
-                        Roll: {upgradeResult.roll} / {multiplier.chance}
+                        Roll: {upgradeResult.roll} /{' '}
+                        {upgradeResult.mode === 'target'
+                          ? upgradeResult.chance
+                          : multiplier.chance}
                       </p>
                       {upgradeResult.won && tradeUrl && steamApiKey && (
                         <p className="trade-status">Trade offer sent automatically</p>
@@ -494,6 +697,113 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                         Try Again
                       </button>
                     </div>
+                  ) : upgradeMode === 'target' ? (
+                    <>
+                      <div className="target-upgrade-display">
+                        <div className="target-inputs">
+                          <p className="selector-label">Selected Items ({selectedSkins.length})</p>
+                          {selectedSkins.length === 0 ? (
+                            <p className="no-skin-selected">Pick items from inventory</p>
+                          ) : (
+                            <div className="selected-inputs-grid">
+                              {selectedSkins.map((s) => (
+                                <div key={s.id} className="selected-input">
+                                  {s.icon && <img src={s.icon} alt={s.name} />}
+                                  <span className="input-name">{s.name}</span>
+                                  <span className="input-price">
+                                    {formatPrice(marketPrices[s.name] ?? priceData[s.id] ?? 0)}
+                                  </span>
+                                  <button
+                                    className="remove-input"
+                                    onClick={() => toggleMultiSelect(s)}
+                                    aria-label={`Remove ${s.name}`}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <p className="total-value">
+                            Input total: <strong>{formatPrice(inputTotalCents)}</strong>
+                          </p>
+                        </div>
+
+                        <div className="target-search">
+                          <p className="selector-label">Target Skin (Steam Market)</p>
+                          <input
+                            type="text"
+                            className="target-search-input"
+                            placeholder="Search market, e.g. AWP | Dragon Lore"
+                            value={targetQuery}
+                            onChange={(e) => setTargetQuery(e.target.value)}
+                            aria-label="Target skin search"
+                          />
+                          {targetSearching && <p className="search-status">Searching Steam Market…</p>}
+                          {targetSkin ? (
+                            <div className="target-selected">
+                              {targetSkin.icon && <img src={targetSkin.icon} alt={targetSkin.name} />}
+                              <div className="target-info">
+                                <span className="target-name">{targetSkin.name}</span>
+                                <span className="target-price">
+                                  {formatPrice(targetSkin.priceCents)}
+                                </span>
+                                <span className="target-chance-label">
+                                  Chance: {targetChance.toFixed(1)}%
+                                </span>
+                              </div>
+                              <button
+                                className="remove-input"
+                                onClick={() => setTargetSkin(null)}
+                                aria-label="Clear target skin"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="target-results">
+                              {targetResults.map((r) => (
+                                <button
+                                  key={r.name}
+                                  className="target-result"
+                                  onClick={() => setTargetSkin(r)}
+                                  disabled={r.priceCents <= inputTotalCents}
+                                  title={
+                                    r.priceCents <= inputTotalCents
+                                      ? 'Target must be worth more than input'
+                                      : ''
+                                  }
+                                >
+                                  {r.icon && <img src={r.icon} alt={r.name} />}
+                                  <span className="result-name">{r.name}</span>
+                                  <span className="result-price">{formatPrice(r.priceCents)}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        className="upgrade-btn"
+                        onClick={handleTargetUpgrade}
+                        disabled={
+                          selectedSkins.length === 0 ||
+                          !targetSkin ||
+                          isUpgrading ||
+                          targetSkin.priceCents <= inputTotalCents
+                        }
+                      >
+                        {isUpgrading ? (
+                          <span className="upgrading-text">
+                            <span className="spinner small" />
+                            Upgrading…
+                          </span>
+                        ) : (
+                          `UPGRADE (${targetChance.toFixed(1)}%)`
+                        )}
+                      </button>
+                    </>
                   ) : (
                     <>
                       <div className="upgrade-display">
@@ -630,6 +940,7 @@ function UpgraderPage({ user, onBack, steamApiKey }) {
                 )}
               </main>
             </div>
+            </>
           )}
 
           {activeTab === 'history' && (
